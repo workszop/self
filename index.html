@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowDesk — Project Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #FFFFFF;
+            --bg-section: #F9F9F9;
+            --accent: #1E3932;
+            --accent-light: #2d5248;
+            --text-heading: #1A1A1A;
+            --text-body: #666666;
+            --border: #F0F0F0;
+            --border-hover: #E0E0E0;
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+            --transition: 150ms ease;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-body);
+            background: var(--bg-main);
+            -webkit-font-smoothing: antialiased;
+        }
+        ::selection { background: var(--accent); color: white; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-section); }
+        ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 10px; }
+
+        /* ---- VIEWS ---- */
+        .view { display: none; }
+        .view.active { display: flex; }
+
+        /* ---- LOGIN ---- */
+        #login-view {
+            min-height: 100vh;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-section);
+        }
+        .login-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 48px 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--shadow-md);
+        }
+        .login-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 32px;
+        }
+        .login-logo-box {
+            width: 36px; height: 36px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .login-logo span { font-weight: 700; font-size: 18px; color: var(--text-heading); }
+        .login-card h2 { font-size: 1.5rem; color: var(--text-heading); margin-bottom: 6px; }
+        .login-card p { color: var(--text-body); margin-bottom: 28px; font-size: 13px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-heading); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            font-family: inherit; font-size: 14px;
+            color: var(--text-heading);
+            background: var(--bg-section);
+            outline: none; transition: border-color var(--transition);
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); background: white; }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .demo-hint { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); padding: 10px 14px; font-size: 12px; color: #166534; margin-bottom: 20px; }
+        .demo-hint strong { display: block; margin-bottom: 2px; }
+
+        /* ---- BUTTONS ---- */
+        .btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 20px; font-size: 13px; font-weight: 600;
+            border-radius: var(--radius-md); border: none; cursor: pointer;
+            transition: all var(--transition); font-family: inherit;
+        }
+        .btn-full { width: 100%; justify-content: center; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: var(--accent-light); }
+        .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text-heading); }
+        .btn-secondary:hover { background: var(--bg-section); border-color: var(--border-hover); }
+        .btn-danger { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
+        .btn-danger:hover { background: #FEE2E2; }
+        .btn-sm { padding: 6px 14px; font-size: 12px; }
+        .btn-ghost { background: transparent; color: var(--text-body); padding: 8px; }
+        .btn-ghost:hover { background: var(--bg-section); color: var(--text-heading); }
+
+        /* ---- APP LAYOUT ---- */
+        #app-view { min-height: 100vh; flex-direction: row; }
+
+        /* ---- SIDEBAR ---- */
+        .sidebar {
+            width: 220px; min-height: 100vh;
+            background: var(--accent);
+            display: flex; flex-direction: column;
+            padding: 0; flex-shrink: 0;
+        }
+        .sidebar-logo {
+            padding: 20px 20px;
+            display: flex; align-items: center; gap: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-logo-box { width: 30px; height: 30px; background: rgba(255,255,255,0.15); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+        .sidebar-logo span { font-size: 16px; font-weight: 700; color: white; }
+        .sidebar-nav { padding: 16px 12px; flex: 1; }
+        .nav-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(255,255,255,0.4); padding: 0 8px; margin: 16px 0 6px; }
+        .nav-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 10px; border-radius: var(--radius-md);
+            color: rgba(255,255,255,0.65); font-size: 13px; font-weight: 500;
+            cursor: pointer; transition: all var(--transition); margin-bottom: 2px;
+            border: none; background: transparent; width: 100%; font-family: inherit; text-align: left;
+        }
+        .nav-item:hover { background: rgba(255,255,255,0.08); color: white; }
+        .nav-item.active { background: rgba(255,255,255,0.12); color: white; }
+        .nav-badge {
+            margin-left: auto; background: rgba(255,255,255,0.2);
+            color: white; font-size: 10px; font-weight: 700;
+            padding: 1px 7px; border-radius: 20px;
+        }
+        .sidebar-footer {
+            padding: 16px 12px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .user-info {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px; border-radius: var(--radius-md);
+            cursor: pointer; transition: background var(--transition);
+        }
+        .user-info:hover { background: rgba(255,255,255,0.08); }
+        .avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 12px; color: white; flex-shrink: 0;
+        }
+        .avatar-lg {
+            width: 56px; height: 56px; font-size: 20px;
+            background: var(--accent); color: white;
+        }
+        .user-info-text { flex: 1; overflow: hidden; }
+        .user-info-name { font-size: 12px; font-weight: 600; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .user-info-role { font-size: 11px; color: rgba(255,255,255,0.5); }
+
+        /* ---- MAIN CONTENT ---- */
+        .main { flex: 1; display: flex; flex-direction: column; min-height: 100vh; overflow-x: hidden; }
+        .topbar {
+            height: 56px; padding: 0 28px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            background: white; flex-shrink: 0;
+        }
+        .topbar-title { font-size: 15px; font-weight: 700; color: var(--text-heading); }
+        .topbar-actions { display: flex; align-items: center; gap: 8px; }
+        .icon-btn {
+            width: 32px; height: 32px; border-radius: var(--radius-md);
+            display: flex; align-items: center; justify-content: center;
+            border: 1px solid var(--border); background: white; cursor: pointer;
+            color: var(--text-body); transition: all var(--transition);
+        }
+        .icon-btn:hover { background: var(--bg-section); color: var(--text-heading); border-color: var(--border-hover); }
+        .notification-dot { position: relative; }
+        .notification-dot::after {
+            content: ''; position: absolute; top: 4px; right: 4px;
+            width: 7px; height: 7px; background: #EF4444; border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        /* ---- PAGES ---- */
+        .page { display: none; padding: 28px; }
+        .page.active { display: block; }
+
+        /* ---- DASHBOARD ---- */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+        .stat-card {
+            background: white; border: 1px solid var(--border);
+            border-radius: var(--radius-md); padding: 20px 22px;
+        }
+        .stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-body); margin-bottom: 8px; }
+        .stat-value { font-size: 28px; font-weight: 700; color: var(--text-heading); line-height: 1; }
+        .stat-delta { display: flex; align-items: center; gap: 4px; margin-top: 6px; font-size: 12px; }
+        .stat-delta.up { color: #059669; }
+        .stat-delta.down { color: #DC2626; }
+        .content-grid { display: grid; grid-template-columns: 1fr 320px; gap: 20px; }
+        .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .section-title { font-size: 14px; font-weight: 700; color: var(--text-heading); }
+        .card { background: white; border: 1px solid var(--border); border-radius: var(--radius-md); }
+
+        /* ---- TASK LIST ---- */
+        .task-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 20px; border-bottom: 1px solid var(--border);
+            transition: background var(--transition); cursor: pointer;
+        }
+        .task-item:last-child { border-bottom: none; }
+        .task-item:hover { background: var(--bg-section); }
+        .task-check {
+            width: 18px; height: 18px; border-radius: 50%;
+            border: 2px solid var(--border-hover); cursor: pointer;
+            flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+            transition: all var(--transition);
+        }
+        .task-check.done { background: var(--accent); border-color: var(--accent); }
+        .task-title { flex: 1; font-size: 13px; color: var(--text-heading); font-weight: 500; }
+        .task-title.done { text-decoration: line-through; color: var(--text-body); }
+        .task-meta { display: flex; align-items: center; gap: 8px; }
+        .badge {
+            display: inline-block; padding: 2px 8px; font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.04em; border-radius: var(--radius-sm);
+        }
+        .badge-high { background: #FEF2F2; color: #DC2626; }
+        .badge-medium { background: #FFFBEB; color: #D97706; }
+        .badge-low { background: #F0FDF4; color: #059669; }
+        .badge-success { background: #ECFDF5; color: #047857; }
+        .badge-info { background: #EFF6FF; color: #1D4ED8; }
+        .badge-neutral { background: var(--bg-section); color: var(--text-body); }
+        .task-due { font-size: 11px; color: var(--text-body); }
+
+        /* ---- ACTIVITY ---- */
+        .activity-item { display: flex; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+        .activity-item:last-child { border-bottom: none; }
+        .activity-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-top: 6px; flex-shrink: 0; }
+        .activity-text { font-size: 12px; color: var(--text-body); line-height: 1.5; }
+        .activity-text strong { color: var(--text-heading); font-weight: 600; }
+        .activity-time { font-size: 11px; color: #999; margin-top: 2px; }
+
+        /* ---- PROJECTS PAGE ---- */
+        .projects-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .project-card {
+            background: white; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px;
+            cursor: pointer; transition: all var(--transition);
+        }
+        .project-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .project-icon { width: 40px; height: 40px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+        .project-name { font-size: 14px; font-weight: 700; color: var(--text-heading); margin-bottom: 4px; }
+        .project-desc { font-size: 12px; color: var(--text-body); margin-bottom: 14px; }
+        .progress-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.6s ease; }
+        .project-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; font-size: 11px; color: var(--text-body); }
+        .avatar-stack { display: flex; }
+        .avatar-stack .avatar { width: 22px; height: 22px; font-size: 9px; background: var(--accent); border: 2px solid white; margin-left: -6px; border-radius: 50%; }
+        .avatar-stack .avatar:first-child { margin-left: 0; }
+
+        /* ---- TASKS PAGE ---- */
+        .tasks-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .search-wrap { flex: 1; display: flex; align-items: center; gap: 8px; background: var(--bg-section); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 8px 14px; }
+        .search-wrap input { flex: 1; border: none; background: transparent; outline: none; font-size: 13px; font-family: inherit; color: var(--text-heading); }
+        .search-wrap input::placeholder { color: #aaa; }
+        .task-table-row {
+            display: flex; align-items: center; gap: 14px;
+            padding: 12px 20px; border-bottom: 1px solid var(--border);
+            transition: background var(--transition); cursor: pointer;
+        }
+        .task-table-row:hover { background: var(--bg-section); }
+        .task-table-row:last-child { border-bottom: none; }
+        .task-col-title { flex: 1; font-size: 13px; color: var(--text-heading); font-weight: 500; }
+        .task-col-project { width: 120px; font-size: 12px; color: var(--text-body); }
+        .task-col-assignee { width: 100px; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-body); }
+        .task-col-due { width: 90px; font-size: 12px; color: var(--text-body); }
+        .task-col-status { width: 90px; }
+
+        /* ---- TEAM PAGE ---- */
+        .team-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .team-card { background: white; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 24px 20px; text-align: center; }
+        .team-card .avatar { width: 52px; height: 52px; font-size: 18px; background: var(--accent); margin: 0 auto 12px; }
+        .team-name { font-size: 14px; font-weight: 700; color: var(--text-heading); margin-bottom: 2px; }
+        .team-role { font-size: 12px; color: var(--text-body); margin-bottom: 14px; }
+        .team-stats { display: flex; gap: 16px; justify-content: center; margin-bottom: 14px; }
+        .team-stat { text-align: center; }
+        .team-stat-val { font-size: 15px; font-weight: 700; color: var(--text-heading); }
+        .team-stat-lbl { font-size: 10px; color: var(--text-body); text-transform: uppercase; letter-spacing: 0.05em; }
+
+        /* ---- SETTINGS PAGE ---- */
+        .settings-layout { display: grid; grid-template-columns: 200px 1fr; gap: 24px; }
+        .settings-nav { }
+        .settings-nav-item {
+            padding: 9px 12px; border-radius: var(--radius-md); font-size: 13px;
+            color: var(--text-body); cursor: pointer; display: block; transition: all var(--transition);
+        }
+        .settings-nav-item:hover { background: var(--bg-section); color: var(--text-heading); }
+        .settings-nav-item.active { background: var(--bg-section); color: var(--text-heading); font-weight: 600; }
+        .settings-section { background: white; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 28px; margin-bottom: 16px; }
+        .settings-section-title { font-size: 14px; font-weight: 700; color: var(--text-heading); margin-bottom: 4px; }
+        .settings-section-desc { font-size: 12px; color: var(--text-body); margin-bottom: 20px; }
+        .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--border); }
+        .settings-row:last-child { border-bottom: none; padding-bottom: 0; }
+        .settings-row-label { font-size: 13px; font-weight: 600; color: var(--text-heading); margin-bottom: 2px; }
+        .settings-row-desc { font-size: 12px; color: var(--text-body); }
+        .toggle {
+            width: 40px; height: 22px; border-radius: 11px; background: var(--border);
+            cursor: pointer; position: relative; transition: background var(--transition); flex-shrink: 0;
+        }
+        .toggle.on { background: var(--accent); }
+        .toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: white; border-radius: 50%; transition: transform var(--transition); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .toggle.on::after { transform: translateX(18px); }
+
+        /* ---- MODALS ---- */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.3); backdrop-filter: blur(2px);
+            z-index: 1000; align-items: center; justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: white; border-radius: var(--radius-lg);
+            width: 100%; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            animation: modalIn 0.2s ease;
+        }
+        .modal-lg { max-width: 640px; }
+        @keyframes modalIn { from { opacity: 0; transform: translateY(-12px) scale(0.98); } to { opacity: 1; transform: none; } }
+        .modal-header {
+            padding: 22px 24px 0; display: flex; align-items: center; justify-content: space-between;
+        }
+        .modal-title { font-size: 16px; font-weight: 700; color: var(--text-heading); }
+        .modal-body { padding: 20px 24px; }
+        .modal-footer { padding: 0 24px 22px; display: flex; gap: 10px; justify-content: flex-end; }
+
+        /* ---- TOAST ---- */
+        .toast-container { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+        .toast {
+            background: var(--text-heading); color: white;
+            padding: 12px 20px; border-radius: var(--radius-md);
+            font-size: 13px; font-weight: 500;
+            display: flex; align-items: center; gap: 10px;
+            box-shadow: var(--shadow-md);
+            animation: toastIn 0.2s ease;
+            min-width: 260px;
+        }
+        .toast.success { background: #059669; }
+        .toast.error { background: #DC2626; }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+        /* ---- CONFIRMATION MODAL (special) ---- */
+        .confirm-icon { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+        .confirm-icon.success { background: #ECFDF5; }
+        .confirm-icon.warning { background: #FFFBEB; }
+        .confirm-icon.danger { background: #FEF2F2; }
+        .confirm-title { text-align: center; font-size: 16px; font-weight: 700; color: var(--text-heading); margin-bottom: 6px; }
+        .confirm-desc { text-align: center; font-size: 13px; color: var(--text-body); }
+
+        /* ---- EMPTY STATE ---- */
+        .empty-state { text-align: center; padding: 48px 24px; }
+        .empty-icon { width: 56px; height: 56px; background: var(--bg-section); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+        .empty-title { font-size: 15px; font-weight: 700; color: var(--text-heading); margin-bottom: 6px; }
+        .empty-desc { font-size: 13px; color: var(--text-body); }
+
+        /* ---- FILTERS TABS ---- */
+        .tab-bar { display: flex; gap: 4px; background: var(--bg-section); border-radius: var(--radius-md); padding: 4px; margin-bottom: 20px; }
+        .tab {
+            padding: 7px 16px; border-radius: var(--radius-sm);
+            font-size: 12px; font-weight: 600; cursor: pointer;
+            color: var(--text-body); border: none; background: transparent; font-family: inherit;
+            transition: all var(--transition);
+        }
+        .tab.active { background: white; color: var(--text-heading); box-shadow: var(--shadow-sm); }
+
+        /* ---- PAGE-AGENT HINT ---- */
+        .agent-hint {
+            position: fixed; bottom: 100px; right: 24px;
+            background: var(--accent); color: white;
+            padding: 10px 16px; border-radius: var(--radius-md);
+            font-size: 12px; max-width: 240px;
+            box-shadow: var(--shadow-md);
+            z-index: 500;
+            animation: fadeInUp 0.5s 2s ease both;
+        }
+        .agent-hint strong { display: block; margin-bottom: 4px; font-size: 12px; }
+        .agent-hint ul { padding-left: 14px; color: rgba(255,255,255,0.8); }
+        .agent-hint ul li { margin-bottom: 2px; }
+        .agent-hint-close {
+            position: absolute; top: 6px; right: 8px;
+            background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 14px;
+        }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+        /* ---- WELCOME BANNER ---- */
+        .welcome-banner {
+            background: var(--accent); border-radius: var(--radius-md);
+            padding: 22px 28px; margin-bottom: 24px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .welcome-text h2 { color: white; font-size: 18px; margin-bottom: 4px; }
+        .welcome-text p { color: rgba(255,255,255,0.7); font-size: 13px; }
+        .welcome-actions { display: flex; gap: 10px; }
+        .btn-white { background: white; color: var(--accent); border: none; }
+        .btn-white:hover { background: rgba(255,255,255,0.9); }
+        .btn-outline-white { background: transparent; border: 1px solid rgba(255,255,255,0.4); color: white; }
+        .btn-outline-white:hover { background: rgba(255,255,255,0.1); }
+    </style>
+</head>
+<body>
+
+<!-- ========== LOGIN VIEW ========== -->
+<div id="login-view" class="view active">
+    <div class="login-card">
+        <div class="login-logo">
+            <div class="login-logo-box">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+            </div>
+            <span>FlowDesk</span>
+        </div>
+        <h2>Welcome back</h2>
+        <p>Sign in to your workspace to continue.</p>
+        <div class="demo-hint">
+            <strong>🤖 Try the AI agent!</strong>
+            Ask it to fill in the form and log in — name: <b>Joe</b> · password: <b>demo</b>
+        </div>
+        <div class="form-group">
+            <label>Name</label>
+            <input type="text" id="login-email" placeholder="Your name">
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="login-password" placeholder="Your password">
+        </div>
+        <button class="btn btn-primary btn-full" id="login-btn" style="margin-top:8px">
+            Sign in
+        </button>
+        <p style="text-align:center; margin-top:16px; font-size:12px;">
+            <a href="#" style="color:var(--accent);text-decoration:none;" onclick="showForgotModal()">Forgot password?</a>
+        </p>
+    </div>
+</div>
+
+<!-- ========== APP VIEW ========== -->
+<div id="app-view" class="view">
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-box">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+            </div>
+            <span>FlowDesk</span>
+        </div>
+        <div class="sidebar-nav">
+            <button class="nav-item active" data-page="dashboard" onclick="showPage('dashboard', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+                Dashboard
+            </button>
+            <button class="nav-item" data-page="projects" onclick="showPage('projects', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3z"/><path d="M14 3h7v7h-7z"/><path d="M14 14h7v7h-7z"/><path d="M3 14h7v7H3z"/></svg>
+                Projects
+            </button>
+            <button class="nav-item" data-page="tasks" onclick="showPage('tasks', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m9 15 2 2 4-4"/></svg>
+                My Tasks
+                <span class="nav-badge" id="task-count-badge">5</span>
+            </button>
+            <div class="nav-section-label">Team</div>
+            <button class="nav-item" data-page="team" onclick="showPage('team', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                People
+            </button>
+            <div class="nav-section-label">Settings</div>
+            <button class="nav-item" data-page="settings" onclick="showPage('settings', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9"/></svg>
+                Settings
+            </button>
+        </div>
+        <div class="sidebar-footer">
+            <div class="user-info" onclick="showPage('settings', document.querySelector('[data-page=settings]'))">
+                <div class="avatar" id="sidebar-avatar">AK</div>
+                <div class="user-info-text">
+                    <div class="user-info-name" id="sidebar-name">Anna Kowalska</div>
+                    <div class="user-info-role">Product Manager</div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN -->
+    <div class="main">
+        <div class="topbar">
+            <div class="topbar-title" id="topbar-title">Dashboard</div>
+            <div class="topbar-actions">
+                <button class="btn btn-primary btn-sm" onclick="showNewTaskModal()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                    New Task
+                </button>
+                <button class="icon-btn notification-dot" onclick="showNotifications()" title="Notifications">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                </button>
+                <button class="icon-btn" onclick="logout()" title="Sign out">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- DASHBOARD PAGE -->
+        <div id="page-dashboard" class="page active">
+            <div class="welcome-banner" id="welcome-banner">
+                <div class="welcome-text">
+                    <h2 id="welcome-msg">Good morning, Anna 👋</h2>
+                    <p>You have <strong id="open-tasks-count" style="color:white">5 open tasks</strong> and 2 meetings today.</p>
+                </div>
+                <div class="welcome-actions">
+                    <button class="btn btn-white btn-sm" onclick="showNewTaskModal()">Add Task</button>
+                    <button class="btn btn-outline-white btn-sm" onclick="showPage('projects', document.querySelector('[data-page=projects]'))">View Projects</button>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Open Tasks</div>
+                    <div class="stat-value" id="stat-open">5</div>
+                    <div class="stat-delta up">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+                        +2 this week
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Completed</div>
+                    <div class="stat-value" id="stat-done">12</div>
+                    <div class="stat-delta up">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+                        +5 this week
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Projects Active</div>
+                    <div class="stat-value">4</div>
+                    <div class="stat-delta" style="color:var(--text-body);">Same as last week</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Team Members</div>
+                    <div class="stat-value">7</div>
+                    <div class="stat-delta up">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+                        +1 new
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-grid">
+                <div>
+                    <div class="section-header">
+                        <div class="section-title">My Tasks</div>
+                        <button class="btn btn-secondary btn-sm" onclick="showPage('tasks', document.querySelector('[data-page=tasks]'))">View all</button>
+                    </div>
+                    <div class="card" id="dashboard-task-list">
+                        <!-- populated by JS -->
+                    </div>
+                </div>
+                <div>
+                    <div class="section-header">
+                        <div class="section-title">Recent Activity</div>
+                    </div>
+                    <div class="card">
+                        <div class="activity-item">
+                            <div class="activity-dot"></div>
+                            <div>
+                                <div class="activity-text"><strong>Marek</strong> completed "API integration docs"</div>
+                                <div class="activity-time">2 min ago</div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-dot" style="background:#D97706"></div>
+                            <div>
+                                <div class="activity-text"><strong>You</strong> added task "Q2 roadmap review"</div>
+                                <div class="activity-time">14 min ago</div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-dot" style="background:#1D4ED8"></div>
+                            <div>
+                                <div class="activity-text"><strong>Ola</strong> invited <strong>Piotr K.</strong> to the team</div>
+                                <div class="activity-time">1h ago</div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-dot" style="background:#7C3AED"></div>
+                            <div>
+                                <div class="activity-text">Project <strong>Mobile App v2</strong> milestone hit 75%</div>
+                                <div class="activity-time">3h ago</div>
+                            </div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-dot" style="background:#059669"></div>
+                            <div>
+                                <div class="activity-text"><strong>Anna</strong> closed sprint #12 with 94% completion</div>
+                                <div class="activity-time">Yesterday</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-header" style="margin-top:20px">
+                        <div class="section-title">Quick Actions</div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:8px;">
+                        <button class="btn btn-secondary" style="justify-content:flex-start;gap:10px;width:100%" onclick="showNewTaskModal()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                            Create new task
+                        </button>
+                        <button class="btn btn-secondary" style="justify-content:flex-start;gap:10px;width:100%" onclick="showInviteModal()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            Invite team member
+                        </button>
+                        <button class="btn btn-secondary" style="justify-content:flex-start;gap:10px;width:100%" onclick="showNewProjectModal()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3z"/><path d="M14 3h7v7h-7z"/><path d="M14 14h7v7h-7z"/><path d="M3 14h7v7H3z"/></svg>
+                            New project
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROJECTS PAGE -->
+        <div id="page-projects" class="page">
+            <div class="section-header" style="margin-bottom:20px">
+                <div>
+                    <div class="section-title" style="font-size:18px;margin-bottom:4px">Projects</div>
+                    <p style="font-size:12px;color:var(--text-body)">4 active projects across your workspace</p>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="showNewProjectModal()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                    New Project
+                </button>
+            </div>
+            <div class="projects-grid" id="projects-grid">
+                <!-- populated by JS -->
+            </div>
+        </div>
+
+        <!-- TASKS PAGE -->
+        <div id="page-tasks" class="page">
+            <div class="section-header" style="margin-bottom:16px">
+                <div>
+                    <div class="section-title" style="font-size:18px;margin-bottom:4px">My Tasks</div>
+                    <p style="font-size:12px;color:var(--text-body)">All tasks assigned to you</p>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="showNewTaskModal()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                    New Task
+                </button>
+            </div>
+            <div class="tasks-toolbar">
+                <div class="search-wrap">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    <input type="text" id="task-search" placeholder="Search tasks…" oninput="filterTasks()">
+                </div>
+                <button class="btn btn-secondary btn-sm">Filter</button>
+                <button class="btn btn-secondary btn-sm">Sort</button>
+            </div>
+            <div class="tab-bar">
+                <button class="tab active" onclick="filterByStatus('all', this)">All</button>
+                <button class="tab" onclick="filterByStatus('todo', this)">To Do</button>
+                <button class="tab" onclick="filterByStatus('inprogress', this)">In Progress</button>
+                <button class="tab" onclick="filterByStatus('done', this)">Done</button>
+            </div>
+            <div class="card" id="full-task-list">
+                <!-- populated by JS -->
+            </div>
+        </div>
+
+        <!-- TEAM PAGE -->
+        <div id="page-team" class="page">
+            <div class="section-header" style="margin-bottom:20px">
+                <div>
+                    <div class="section-title" style="font-size:18px;margin-bottom:4px">People</div>
+                    <p style="font-size:12px;color:var(--text-body)">7 members in your workspace</p>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="showInviteModal()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                    Invite Member
+                </button>
+            </div>
+            <div class="team-grid" id="team-grid">
+                <!-- populated by JS -->
+            </div>
+        </div>
+
+        <!-- SETTINGS PAGE -->
+        <div id="page-settings" class="page">
+            <div style="margin-bottom:20px">
+                <div class="section-title" style="font-size:18px;margin-bottom:4px">Settings</div>
+                <p style="font-size:12px;color:var(--text-body)">Manage your account and preferences</p>
+            </div>
+            <div class="settings-layout">
+                <div class="settings-nav">
+                    <div class="settings-nav-item active" onclick="switchSettingsTab('profile', this)">Profile</div>
+                    <div class="settings-nav-item" onclick="switchSettingsTab('notifications', this)">Notifications</div>
+                    <div class="settings-nav-item" onclick="switchSettingsTab('security', this)">Security</div>
+                    <div class="settings-nav-item" onclick="switchSettingsTab('workspace', this)">Workspace</div>
+                </div>
+                <div>
+                    <!-- PROFILE -->
+                    <div id="settings-profile">
+                        <div class="settings-section">
+                            <div class="settings-section-title">Profile Information</div>
+                            <div class="settings-section-desc">Update your name, email and role.</div>
+                            <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+                                <div class="avatar avatar-lg" id="settings-avatar">AK</div>
+                                <button class="btn btn-secondary btn-sm" onclick="toast('Avatar upload coming soon!', 'info')">Change photo</button>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>First Name</label>
+                                    <input type="text" id="set-firstname" value="Anna">
+                                </div>
+                                <div class="form-group">
+                                    <label>Last Name</label>
+                                    <input type="text" id="set-lastname" value="Kowalska">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" id="set-email" value="anna@flowdesk.io">
+                            </div>
+                            <div class="form-group">
+                                <label>Role / Title</label>
+                                <input type="text" id="set-role" value="Product Manager">
+                            </div>
+                            <div class="form-group">
+                                <label>Bio</label>
+                                <textarea id="set-bio" placeholder="Tell your team a bit about yourself…">Building great products, one sprint at a time.</textarea>
+                            </div>
+                            <button class="btn btn-primary" onclick="saveProfile()">Save changes</button>
+                        </div>
+                        <div class="settings-section">
+                            <div class="settings-section-title" style="color:#DC2626">Danger Zone</div>
+                            <div class="settings-section-desc">Irreversible actions for your account.</div>
+                            <button class="btn btn-danger" onclick="showDeleteAccountModal()">Delete account</button>
+                        </div>
+                    </div>
+                    <!-- NOTIFICATIONS -->
+                    <div id="settings-notifications" style="display:none">
+                        <div class="settings-section">
+                            <div class="settings-section-title">Email Notifications</div>
+                            <div class="settings-section-desc">Choose what you get emailed about.</div>
+                            <div class="settings-row">
+                                <div>
+                                    <div class="settings-row-label">Task assignments</div>
+                                    <div class="settings-row-desc">When someone assigns a task to you</div>
+                                </div>
+                                <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+                            </div>
+                            <div class="settings-row">
+                                <div>
+                                    <div class="settings-row-label">Task comments</div>
+                                    <div class="settings-row-desc">When someone comments on your tasks</div>
+                                </div>
+                                <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+                            </div>
+                            <div class="settings-row">
+                                <div>
+                                    <div class="settings-row-label">Project updates</div>
+                                    <div class="settings-row-desc">Weekly project progress digest</div>
+                                </div>
+                                <div class="toggle" onclick="this.classList.toggle('on')"></div>
+                            </div>
+                            <div class="settings-row">
+                                <div>
+                                    <div class="settings-row-label">Team invitations</div>
+                                    <div class="settings-row-desc">When you're added to a new workspace</div>
+                                </div>
+                                <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+                            </div>
+                        </div>
+                        <div class="settings-section">
+                            <div class="settings-section-title">Push Notifications</div>
+                            <div class="settings-section-desc">Real-time alerts in your browser.</div>
+                            <div class="settings-row">
+                                <div>
+                                    <div class="settings-row-label">Enable push notifications</div>
+                                    <div class="settings-row-desc">Get notified even when FlowDesk is in background</div>
+                                </div>
+                                <div class="toggle" onclick="this.classList.toggle('on');toast('Push notifications updated','success')"></div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="toast('Notification preferences saved!','success')">Save preferences</button>
+                    </div>
+                    <!-- SECURITY -->
+                    <div id="settings-security" style="display:none">
+                        <div class="settings-section">
+                            <div class="settings-section-title">Change Password</div>
+                            <div class="settings-section-desc">Use a strong, unique password.</div>
+                            <div class="form-group">
+                                <label>Current Password</label>
+                                <input type="password" placeholder="••••••••">
+                            </div>
+                            <div class="form-group">
+                                <label>New Password</label>
+                                <input type="password" placeholder="••••••••">
+                            </div>
+                            <div class="form-group">
+                                <label>Confirm New Password</label>
+                                <input type="password" placeholder="••••••••">
+                            </div>
+                            <button class="btn btn-primary" onclick="toast('Password changed successfully!','success')">Update password</button>
+                        </div>
+                        <div class="settings-section">
+                            <div class="settings-section-title">Two-Factor Authentication</div>
+                            <div class="settings-section-desc">Add an extra layer of security.</div>
+                            <div class="settings-row">
+                                <div>
+                                    <div class="settings-row-label">Authenticator app</div>
+                                    <div class="settings-row-desc">Use Google Authenticator or similar</div>
+                                </div>
+                                <div class="toggle" onclick="this.classList.toggle('on');toast('2FA setting toggled','success')"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- WORKSPACE -->
+                    <div id="settings-workspace" style="display:none">
+                        <div class="settings-section">
+                            <div class="settings-section-title">Workspace Settings</div>
+                            <div class="settings-section-desc">Customize your workspace appearance and defaults.</div>
+                            <div class="form-group">
+                                <label>Workspace Name</label>
+                                <input type="text" value="Acme Corp — Product Team">
+                            </div>
+                            <div class="form-group">
+                                <label>Default Task View</label>
+                                <select>
+                                    <option>List</option>
+                                    <option>Board</option>
+                                    <option>Calendar</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Timezone</label>
+                                <select>
+                                    <option>Europe/Warsaw (CET)</option>
+                                    <option>UTC</option>
+                                    <option>America/New_York</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" onclick="toast('Workspace settings saved!','success')">Save settings</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== MODALS ========== -->
+
+<!-- New Task Modal -->
+<div class="modal-overlay" id="modal-new-task">
+    <div class="modal modal-lg">
+        <div class="modal-header">
+            <div class="modal-title">Create new task</div>
+            <button class="btn btn-ghost" onclick="closeModal('modal-new-task')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Task Title *</label>
+                <input type="text" id="new-task-title" placeholder="What needs to be done?">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="new-task-desc" placeholder="Add more details…"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Project</label>
+                    <select id="new-task-project">
+                        <option value="mobile">Mobile App v2</option>
+                        <option value="design">Design System</option>
+                        <option value="api">API Platform</option>
+                        <option value="marketing">Marketing Site</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Priority</label>
+                    <select id="new-task-priority">
+                        <option value="high">High</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Assignee</label>
+                    <select id="new-task-assignee">
+                        <option>Anna Kowalska (me)</option>
+                        <option>Marek Nowak</option>
+                        <option>Ola Wiśniewska</option>
+                        <option>Piotr Kowalczyk</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Due Date</label>
+                    <input type="date" id="new-task-due">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modal-new-task')">Cancel</button>
+            <button class="btn btn-primary" onclick="createTask()">Create Task</button>
+        </div>
+    </div>
+</div>
+
+<!-- Invite Member Modal -->
+<div class="modal-overlay" id="modal-invite">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">Invite team member</div>
+            <button class="btn btn-ghost" onclick="closeModal('modal-invite')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Name</label>
+                <input type="email" id="invite-email" placeholder="colleague@company.com">
+            </div>
+            <div class="form-group">
+                <label>Role</label>
+                <select id="invite-role">
+                    <option>Member</option>
+                    <option>Admin</option>
+                    <option>Viewer</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Personal message (optional)</label>
+                <textarea id="invite-message" placeholder="Join our FlowDesk workspace…"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modal-invite')">Cancel</button>
+            <button class="btn btn-primary" onclick="sendInvite()">Send Invitation</button>
+        </div>
+    </div>
+</div>
+
+<!-- New Project Modal -->
+<div class="modal-overlay" id="modal-new-project">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title">Create new project</div>
+            <button class="btn btn-ghost" onclick="closeModal('modal-new-project')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>Project Name *</label>
+                <input type="text" id="new-project-name" placeholder="e.g. Marketing Campaign Q3">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="new-project-desc" placeholder="What is this project about?"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Color</label>
+                    <select id="new-project-color">
+                        <option value="#1E3932">Forest Green</option>
+                        <option value="#1D4ED8">Blue</option>
+                        <option value="#7C3AED">Purple</option>
+                        <option value="#D97706">Amber</option>
+                        <option value="#DC2626">Red</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Due Date</label>
+                    <input type="date" id="new-project-due">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modal-new-project')">Cancel</button>
+            <button class="btn btn-primary" onclick="createProject()">Create Project</button>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal-overlay" id="modal-confirm">
+    <div class="modal" style="max-width:380px;text-align:center">
+        <div class="modal-body" style="padding:32px 28px">
+            <div class="confirm-icon success" id="confirm-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="confirm-svg">
+                    <circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>
+                </svg>
+            </div>
+            <div class="confirm-title" id="confirm-title">Done!</div>
+            <div class="confirm-desc" id="confirm-desc">Your changes have been saved.</div>
+        </div>
+        <div class="modal-footer" style="justify-content:center">
+            <button class="btn btn-primary" onclick="closeModal('modal-confirm')" id="confirm-btn">Got it</button>
+        </div>
+    </div>
+</div>
+
+<!-- Forgot Password Modal -->
+<div class="modal-overlay" id="modal-forgot">
+    <div class="modal" style="max-width:400px">
+        <div class="modal-header">
+            <div class="modal-title">Reset password</div>
+            <button class="btn btn-ghost" onclick="closeModal('modal-forgot')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p style="font-size:13px;color:var(--text-body);margin-bottom:16px">Enter your email and we'll send a reset link.</p>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="email" id="forgot-email" placeholder="you@company.com">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('modal-forgot')">Cancel</button>
+            <button class="btn btn-primary" onclick="sendReset()">Send reset link</button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Account Modal -->
+<div class="modal-overlay" id="modal-delete">
+    <div class="modal" style="max-width:400px;text-align:center">
+        <div class="modal-body" style="padding:32px 28px">
+            <div class="confirm-icon danger">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                </svg>
+            </div>
+            <div class="confirm-title">Delete account?</div>
+            <div class="confirm-desc" style="margin-bottom:16px">This will permanently delete your account and all data. This cannot be undone.</div>
+            <input type="text" placeholder='Type "DELETE" to confirm' id="delete-confirm-input" style="width:100%;padding:10px;border:1px solid #FECACA;border-radius:8px;font-family:inherit;font-size:13px;outline:none;text-align:center">
+        </div>
+        <div class="modal-footer" style="justify-content:center;gap:10px">
+            <button class="btn btn-secondary" onclick="closeModal('modal-delete')">Cancel</button>
+            <button class="btn btn-danger" onclick="confirmDelete()">Delete account</button>
+        </div>
+    </div>
+</div>
+
+<!-- Notifications Panel -->
+<div class="modal-overlay" id="modal-notifications">
+    <div class="modal" style="position:fixed;top:64px;right:24px;max-width:360px;margin:0;border-radius:12px">
+        <div class="modal-header" style="padding:18px 20px 0">
+            <div class="modal-title" style="font-size:14px">Notifications</div>
+            <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-notifications')">Mark all read</button>
+        </div>
+        <div class="modal-body" style="padding:12px 0">
+            <div class="activity-item" style="padding:12px 20px">
+                <div class="activity-dot" style="background:#DC2626;margin-top:4px"></div>
+                <div>
+                    <div class="activity-text"><strong>Marek</strong> assigned you "Fix dashboard crash bug" — <span style="color:#DC2626;font-weight:600">High priority</span></div>
+                    <div class="activity-time">Just now</div>
+                </div>
+            </div>
+            <div class="activity-item" style="padding:12px 20px">
+                <div class="activity-dot" style="background:#1D4ED8;margin-top:4px"></div>
+                <div>
+                    <div class="activity-text"><strong>Ola</strong> commented on "Q2 roadmap review"</div>
+                    <div class="activity-time">5 min ago</div>
+                </div>
+            </div>
+            <div class="activity-item" style="padding:12px 20px">
+                <div class="activity-dot" style="background:#059669;margin-top:4px"></div>
+                <div>
+                    <div class="activity-text">Sprint #13 starts tomorrow — 8 tasks in backlog</div>
+                    <div class="activity-time">1h ago</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Logout Confirm -->
+<div class="modal-overlay" id="modal-logout">
+    <div class="modal" style="max-width:360px;text-align:center">
+        <div class="modal-body" style="padding:32px 28px">
+            <div class="confirm-icon warning">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>
+                </svg>
+            </div>
+            <div class="confirm-title">Sign out?</div>
+            <div class="confirm-desc">You'll need to sign back in to access your workspace.</div>
+        </div>
+        <div class="modal-footer" style="justify-content:center;gap:10px">
+            <button class="btn btn-secondary" onclick="closeModal('modal-logout')">Stay signed in</button>
+            <button class="btn btn-primary" onclick="doLogout()">Sign out</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========== AGENT HINT ========== -->
+<div class="agent-hint" id="agent-hint">
+    <button class="agent-hint-close" onclick="document.getElementById('agent-hint').remove()">×</button>
+    <strong>🤖 AI Agent active!</strong>
+    <ul>
+        <li>Create a new task</li>
+        <li>Go to projects</li>
+        <li>Open settings</li>
+        <li>Invite a team member</li>
+    </ul>
+</div>
+
+<!-- ========== TOAST CONTAINER ========== -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ========== PAGE-AGENT ========== -->
+<script>
+    // Polyfill: page-agent uses console.debug.bind() which is undefined in some sandboxes
+    if (typeof console.debug === 'undefined') console.debug = console.log.bind(console);
+    if (typeof console.info  === 'undefined') console.info  = console.log.bind(console);
+    if (typeof console.warn  === 'undefined') console.warn  = console.log.bind(console);
+</script>
+<script src="https://cdn.jsdelivr.net/npm/page-agent@1.5.2/dist/iife/page-agent.demo.js" crossorigin="true"></script>
+
+<script>
+// ===== DATA =====
+let currentUser = { name: 'Anna Kowalska', email: 'anna@flowdesk.io', initials: 'AK' };
+let taskStatusFilter = 'all';
+
+let tasks = [
+    { id: 1, title: 'Q2 roadmap review', project: 'Mobile App v2', priority: 'high', status: 'todo', assignee: 'AK', due: '2026-03-18' },
+    { id: 2, title: 'Update design tokens', project: 'Design System', priority: 'medium', status: 'inprogress', assignee: 'AK', due: '2026-03-20' },
+    { id: 3, title: 'Write API integration tests', project: 'API Platform', priority: 'high', status: 'todo', assignee: 'AK', due: '2026-03-22' },
+    { id: 4, title: 'Review landing page copy', project: 'Marketing Site', priority: 'low', status: 'todo', assignee: 'AK', due: '2026-03-25' },
+    { id: 5, title: 'Sprint retrospective notes', project: 'Mobile App v2', priority: 'medium', status: 'todo', assignee: 'AK', due: '2026-03-17' },
+    { id: 6, title: 'Set up CI/CD pipeline', project: 'API Platform', priority: 'high', status: 'done', assignee: 'AK', due: '2026-03-14' },
+    { id: 7, title: 'User interview analysis', project: 'Mobile App v2', priority: 'medium', status: 'done', assignee: 'AK', due: '2026-03-12' },
+];
+
+let projects = [
+    { id: 1, name: 'Mobile App v2', desc: 'Redesign and rebuild the mobile experience from scratch.', color: '#7C3AED', progress: 72, members: ['AK','MN','OW'], due: 'Apr 15' },
+    { id: 2, name: 'Design System', desc: 'Unified component library across all products.', color: '#1D4ED8', progress: 45, members: ['OW','PK'], due: 'May 1' },
+    { id: 3, name: 'API Platform', desc: 'RESTful API and developer portal improvements.', color: '#1E3932', progress: 88, members: ['MN','JS'], due: 'Mar 30' },
+    { id: 4, name: 'Marketing Site', desc: 'New company website and blog infrastructure.', color: '#D97706', progress: 30, members: ['AK','LM'], due: 'Jun 1' },
+];
+
+let team = [
+    { name: 'Anna Kowalska', role: 'Product Manager', initials: 'AK', tasks: 5, done: 12 },
+    { name: 'Marek Nowak', role: 'Senior Engineer', initials: 'MN', tasks: 8, done: 24 },
+    { name: 'Ola Wiśniewska', role: 'UX Designer', initials: 'OW', tasks: 3, done: 9 },
+    { name: 'Piotr Kowalczyk', role: 'Frontend Dev', initials: 'PK', tasks: 6, done: 18 },
+    { name: 'Julia Szymańska', role: 'QA Engineer', initials: 'JS', tasks: 4, done: 15 },
+    { name: 'Lena Mazur', role: 'Content Writer', initials: 'LM', tasks: 2, done: 7 },
+    { name: 'Piotr Krawczyk', role: 'DevOps Engineer', initials: 'PK', tasks: 7, done: 20 },
+];
+
+// ===== LOGIN =====
+document.getElementById('login-btn').addEventListener('click', function() {
+    const email = document.getElementById('login-email').value.trim();
+    const pass = document.getElementById('login-password').value;
+    if (!email || !pass) { toast('Please enter your name and password', 'error'); return; }
+    if (pass !== 'demo') { toast('Wrong password — hint: demo', 'error'); return; }
+    this.textContent = 'Signing in…';
+    this.disabled = true;
+    setTimeout(() => {
+        document.getElementById('login-view').classList.remove('active');
+        document.getElementById('app-view').classList.add('active');
+        const first = email;
+        const name = first.charAt(0).toUpperCase() + first.slice(1);
+        currentUser.name = name;
+        currentUser.initials = name.slice(0,2).toUpperCase();
+        document.getElementById('sidebar-name').textContent = currentUser.name;
+        document.getElementById('sidebar-avatar').textContent = currentUser.initials;
+        document.getElementById('settings-avatar').textContent = currentUser.initials;
+        updateWelcome();
+        renderDashboard();
+        renderProjects();
+        renderFullTaskList();
+        renderTeam();
+        this.textContent = 'Sign in';
+        this.disabled = false;
+        toast('Welcome back, ' + name + '! 👋', 'success');
+    }, 900);
+});
+
+document.getElementById('login-email').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('login-btn').click(); });
+document.getElementById('login-password').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('login-btn').click(); });
+
+// ===== LOGOUT =====
+function logout() { openModal('modal-logout'); }
+function doLogout() {
+    closeModal('modal-logout');
+    document.getElementById('app-view').classList.remove('active');
+    document.getElementById('login-view').classList.add('active');
+    document.getElementById('login-password').value = '';
+    toast('Signed out successfully');
+}
+
+// ===== NAVIGATION =====
+function showPage(page, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    if(btn) btn.classList.add('active');
+    const titles = { dashboard:'Dashboard', projects:'Projects', tasks:'My Tasks', team:'People', settings:'Settings' };
+    document.getElementById('topbar-title').textContent = titles[page] || page;
+}
+
+// ===== RENDER =====
+function updateWelcome() {
+    const h = new Date().getHours();
+    const g = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+    const first = currentUser.name.split(' ')[0];
+    document.getElementById('welcome-msg').textContent = `Good ${g}, ${first} 👋`;
+    const open = tasks.filter(t => t.status !== 'done').length;
+    document.getElementById('open-tasks-count').textContent = `${open} open tasks`;
+    document.getElementById('stat-open').textContent = open;
+    document.getElementById('stat-done').textContent = tasks.filter(t => t.status === 'done').length;
+    document.getElementById('task-count-badge').textContent = open;
+}
+
+function renderDashboard() {
+    const el = document.getElementById('dashboard-task-list');
+    const list = tasks.filter(t => t.status !== 'done').slice(0, 5);
+    if (!list.length) { el.innerHTML = '<div class="empty-state"><div class="empty-title">All done! 🎉</div><div class="empty-desc">No open tasks.</div></div>'; return; }
+    el.innerHTML = list.map(t => `
+        <div class="task-item" onclick="openTaskDetail(${t.id})">
+            <div class="task-check ${t.status === 'done' ? 'done' : ''}" onclick="toggleTask(event,${t.id})">
+                ${t.status === 'done' ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+            </div>
+            <div class="task-title ${t.status === 'done' ? 'done' : ''}">${t.title}</div>
+            <div class="task-meta">
+                <span class="badge badge-${t.priority}">${t.priority}</span>
+                <span class="task-due">${formatDate(t.due)}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderFullTaskList() {
+    const search = (document.getElementById('task-search') || {value:''}).value.toLowerCase();
+    const el = document.getElementById('full-task-list');
+    let list = tasks.filter(t => {
+        const matchSearch = !search || t.title.toLowerCase().includes(search) || t.project.toLowerCase().includes(search);
+        const matchStatus = taskStatusFilter === 'all' || t.status === taskStatusFilter;
+        return matchSearch && matchStatus;
+    });
+    if (!list.length) { el.innerHTML = '<div class="empty-state"><div class="empty-title">No tasks found</div><div class="empty-desc">Try a different filter or create a new task.</div></div>'; return; }
+    el.innerHTML = `
+        <div class="task-table-row" style="background:var(--bg-section);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-body)">
+            <div style="width:18px"></div>
+            <div class="task-col-title">Task</div>
+            <div class="task-col-project">Project</div>
+            <div class="task-col-status">Status</div>
+            <div class="task-col-due">Due</div>
+            <div style="width:60px">Priority</div>
+        </div>
+        ${list.map(t => `
+        <div class="task-table-row" onclick="openTaskDetail(${t.id})">
+            <div class="task-check ${t.status==='done'?'done':''}" style="width:18px;height:18px" onclick="toggleTask(event,${t.id})">
+                ${t.status==='done'?'<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':''}
+            </div>
+            <div class="task-col-title ${t.status==='done'?'done':''}">${t.title}</div>
+            <div class="task-col-project">${t.project}</div>
+            <div class="task-col-status"><span class="badge badge-${t.status==='done'?'success':t.status==='inprogress'?'info':'neutral'}">${t.status==='inprogress'?'In Progress':t.status.charAt(0).toUpperCase()+t.status.slice(1)}</span></div>
+            <div class="task-col-due">${formatDate(t.due)}</div>
+            <div style="width:60px"><span class="badge badge-${t.priority}">${t.priority}</span></div>
+        </div>
+        `).join('')}
+    `;
+}
+
+function renderProjects() {
+    document.getElementById('projects-grid').innerHTML = projects.map(p => `
+        <div class="project-card" onclick="toast('Opening project: ${p.name}')">
+            <div class="project-icon" style="background:${p.color}20">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${p.color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3z"/><path d="M14 3h7v7h-7z"/><path d="M14 14h7v7h-7z"/><path d="M3 14h7v7H3z"/></svg>
+            </div>
+            <div class="project-name">${p.name}</div>
+            <div class="project-desc">${p.desc}</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${p.progress}%;background:${p.color}"></div></div>
+            <div class="project-footer">
+                <div class="avatar-stack">${p.members.map(m=>`<div class="avatar" style="background:${p.color}">${m}</div>`).join('')}</div>
+                <span>${p.progress}% · Due ${p.due}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderTeam() {
+    document.getElementById('team-grid').innerHTML = team.map(m => `
+        <div class="team-card">
+            <div class="avatar avatar-lg" style="border-radius:50%;display:flex;align-items:center;justify-content:center">${m.initials}</div>
+            <div class="team-name">${m.name}</div>
+            <div class="team-role">${m.role}</div>
+            <div class="team-stats">
+                <div class="team-stat"><div class="team-stat-val">${m.tasks}</div><div class="team-stat-lbl">Open</div></div>
+                <div class="team-stat"><div class="team-stat-val">${m.done}</div><div class="team-stat-lbl">Done</div></div>
+            </div>
+            <button class="btn btn-secondary btn-sm" style="width:100%" onclick="toast('Opening profile of ${m.name}')">View Profile</button>
+        </div>
+    `).join('');
+}
+
+// ===== TASKS =====
+function toggleTask(e, id) {
+    e.stopPropagation();
+    const t = tasks.find(x => x.id === id);
+    if (!t) return;
+    t.status = t.status === 'done' ? 'todo' : 'done';
+    renderDashboard(); renderFullTaskList(); updateWelcome();
+    toast(t.status === 'done' ? '✓ Task completed!' : 'Task reopened', t.status === 'done' ? 'success' : 'info');
+}
+
+function openTaskDetail(id) {
+    const t = tasks.find(x => x.id === id);
+    if (!t) return;
+    showConfirm(`📋 ${t.title}`, `Project: ${t.project} · Priority: ${t.priority} · Due: ${formatDate(t.due)}`, 'info', 'Close');
+}
+
+function filterTasks() { renderFullTaskList(); }
+function filterByStatus(s, btn) {
+    taskStatusFilter = s;
+    document.querySelectorAll('.tab-bar .tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    renderFullTaskList();
+}
+
+function createTask() {
+    const title = document.getElementById('new-task-title').value.trim();
+    if (!title) { toast('Please enter a task title', 'error'); return; }
+    const project = document.getElementById('new-task-project');
+    const priority = document.getElementById('new-task-priority').value;
+    const due = document.getElementById('new-task-due').value || '2026-03-31';
+    tasks.unshift({ id: Date.now(), title, project: project.options[project.selectedIndex].text, priority, status: 'todo', assignee: 'AK', due });
+    closeModal('modal-new-task');
+    document.getElementById('new-task-title').value = '';
+    document.getElementById('new-task-desc').value = '';
+    renderDashboard(); renderFullTaskList(); updateWelcome();
+    showConfirm('Task created! 🎉', `"${title}" has been added to your tasks.`, 'success');
+}
+
+// ===== PROJECTS =====
+function createProject() {
+    const name = document.getElementById('new-project-name').value.trim();
+    if (!name) { toast('Please enter a project name', 'error'); return; }
+    const color = document.getElementById('new-project-color').value;
+    projects.push({ id: Date.now(), name, desc: document.getElementById('new-project-desc').value || 'New project', color, progress: 0, members: ['AK'], due: 'TBD' });
+    closeModal('modal-new-project');
+    document.getElementById('new-project-name').value = '';
+    renderProjects();
+    showConfirm('Project created! 🚀', `"${name}" is ready. Start adding tasks.`, 'success');
+}
+
+// ===== INVITE =====
+function sendInvite() {
+    const email = document.getElementById('invite-email').value.trim();
+    if (!email || !email.includes('@')) { toast('Please enter a valid email', 'error'); return; }
+    const role = document.getElementById('invite-role').value;
+    closeModal('modal-invite');
+    document.getElementById('invite-email').value = '';
+    showConfirm('Invitation sent! 📧', `${email} will receive an invite as ${role}.`, 'success');
+}
+
+// ===== SETTINGS =====
+function switchSettingsTab(tab, el) {
+    ['profile','notifications','security','workspace'].forEach(t => {
+        const el2 = document.getElementById('settings-' + t);
+        if(el2) el2.style.display = t === tab ? '' : 'none';
+    });
+    document.querySelectorAll('.settings-nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+}
+
+function saveProfile() {
+    const fn = document.getElementById('set-firstname').value.trim();
+    const ln = document.getElementById('set-lastname').value.trim();
+    if (!fn || !ln) { toast('Please fill in your name', 'error'); return; }
+    currentUser.name = fn + ' ' + ln;
+    currentUser.initials = fn[0].toUpperCase() + ln[0].toUpperCase();
+    document.getElementById('sidebar-name').textContent = currentUser.name;
+    document.getElementById('sidebar-avatar').textContent = currentUser.initials;
+    document.getElementById('settings-avatar').textContent = currentUser.initials;
+    showConfirm('Profile updated! ✅', 'Your profile information has been saved successfully.');
+}
+
+function showDeleteAccountModal() { openModal('modal-delete'); }
+function confirmDelete() {
+    const val = document.getElementById('delete-confirm-input').value;
+    if (val !== 'DELETE') { toast('Type DELETE to confirm', 'error'); return; }
+    closeModal('modal-delete');
+    document.getElementById('app-view').classList.remove('active');
+    document.getElementById('login-view').classList.add('active');
+    toast('Account deleted. Sorry to see you go!');
+}
+
+// ===== NOTIFICATIONS =====
+function showNotifications() { openModal('modal-notifications'); }
+
+// ===== FORGOT PASSWORD =====
+function showForgotModal() { openModal('modal-forgot'); }
+function sendReset() {
+    const email = document.getElementById('forgot-email').value.trim();
+    if (!email) { toast('Please enter your email', 'error'); return; }
+    closeModal('modal-forgot');
+    showConfirm('Email sent! 📬', `Reset instructions sent to ${email}.`, 'success');
+}
+
+// ===== MODAL UTILS =====
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function showNewTaskModal() { openModal('modal-new-task'); }
+function showInviteModal() { openModal('modal-invite'); }
+function showNewProjectModal() { openModal('modal-new-project'); }
+
+document.querySelectorAll('.modal-overlay').forEach(o => {
+    o.addEventListener('click', function(e) {
+        if (e.target === this) closeModal(this.id);
+    });
+});
+
+function showConfirm(title, desc, type = 'success', btnText = 'Got it') {
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-desc').textContent = desc;
+    document.getElementById('confirm-btn').textContent = btnText;
+    const icon = document.getElementById('confirm-icon');
+    icon.className = 'confirm-icon ' + (type === 'success' ? 'success' : type === 'warning' ? 'warning' : type === 'info' ? '' : 'success');
+    const colors = { success:'#059669', info:'#1D4ED8', warning:'#D97706', danger:'#DC2626' };
+    document.getElementById('confirm-svg').setAttribute('stroke', colors[type] || colors.success);
+    openModal('modal-confirm');
+}
+
+// ===== TOAST =====
+function toast(msg, type = 'default') {
+    const c = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = 'toast ' + (type === 'success' ? 'success' : type === 'error' ? 'error' : '');
+    const icons = {
+        success: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>',
+        error: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
+        default: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>'
+    };
+    t.innerHTML = (icons[type] || icons.default) + msg;
+    c.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+// ===== HELPERS =====
+function formatDate(d) {
+    if (!d) return '—';
+    const dt = new Date(d);
+    return dt.toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+}
+
+// Set default due date to tomorrow in new task form
+const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+document.getElementById('new-task-due').valueAsDate = tomorrow;
+document.getElementById('new-project-due').valueAsDate = new Date(Date.now() + 30*864e5);
+
+// Init keyboard shortcut
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        showNewTaskModal();
+    }
+});
+</script>
+
+</body>
+</html>
