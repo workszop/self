@@ -392,6 +392,64 @@
             position: absolute; top: 6px; right: 8px;
             background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; font-size: 14px;
         }
+
+        #playwright-highlight-container {
+            display: none !important;
+        }
+
+        #page-agent-runtime_agent-panel {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+            --color-1: #1E3932 !important;
+            --color-2: #2d5248 !important;
+            --color-3: #1E3932 !important;
+            --color-4: #4f7a6d !important;
+        }
+
+        .pa-toggle-btn {
+            width: 24px;
+            height: 24px;
+            border: 1px solid rgba(30,57,50,0.18);
+            border-radius: var(--radius-sm);
+            background: rgba(30,57,50,0.08);
+            color: var(--accent);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            line-height: 1;
+            position: relative;
+            transition: all var(--transition);
+        }
+        .pa-toggle-btn:hover {
+            background: rgba(30,57,50,0.16);
+        }
+        .pa-toggle-btn.pa-active {
+            background: var(--accent);
+            color: white;
+        }
+        .pa-toggle-btn .pa-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            min-width: 14px;
+            height: 14px;
+            padding: 0 3px;
+            border-radius: 999px;
+            background: var(--accent);
+            color: white;
+            font-size: 8px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+        .pa-toggle-btn .pa-badge:empty,
+        .pa-toggle-btn .pa-badge[data-count="0"] {
+            display: none;
+        }
+
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 
         /* ---- WELCOME BANNER ---- */
@@ -1284,7 +1342,7 @@
 </div>
 
 <!-- ========== AGENT HINT ========== -->
-<div class="agent-hint" id="agent-hint">
+<div class="agent-hint" id="agent-hint" data-page-agent-not-interactive="true">
     <button class="agent-hint-close" onclick="document.getElementById('agent-hint').remove()">×</button>
     <strong>🤖 AI Agent active!</strong>
     <ul>
@@ -1296,7 +1354,7 @@
 </div>
 
 <!-- ========== TOAST CONTAINER ========== -->
-<div class="toast-container" id="toast-container"></div>
+<div class="toast-container" id="toast-container" data-page-agent-not-interactive="true"></div>
 
 <!-- ========== PAGE-AGENT ========== -->
 <script>
@@ -1305,7 +1363,98 @@
     if (typeof console.info  === 'undefined') console.info  = console.log.bind(console);
     if (typeof console.warn  === 'undefined') console.warn  = console.log.bind(console);
 </script>
-<script src="https://cdn.jsdelivr.net/npm/page-agent@1.5.2/dist/iife/page-agent.demo.js" crossorigin="true"></script>
+<script src="./page-agent.bundle.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        const agent = new PageAgent({
+            model: 'gemini-3.1-flash-lite-preview',
+            baseURL: 'https://agent.andrzey-jankowski.workers.dev/',
+            apiKey: 'unused-by-proxy',
+            language: 'en-US',
+        });
+
+        window.pageAgent = agent;
+        agent.panel.show();
+
+        let historyOpen = false;
+
+        function setupQuietAgentPanel() {
+            const wrapper = document.getElementById('page-agent-runtime_agent-panel');
+            if (!wrapper) return false;
+            if (wrapper.dataset.paSetup) return true;
+            wrapper.dataset.paSetup = 'true';
+
+            const controls = wrapper.querySelector('._controls_gtdpc_188');
+            const historyWrap = wrapper.querySelector('._historySectionWrapper_gtdpc_246');
+            const historySection = wrapper.querySelector('._historySection_gtdpc_246');
+            if (!controls || !historyWrap) return true;
+
+            historyWrap.style.setProperty('visibility', 'collapse', 'important');
+            historyWrap.style.setProperty('padding-top', '0', 'important');
+            if (historySection) {
+                historySection.style.setProperty('max-height', '0', 'important');
+            }
+
+            const stopBtn = wrapper.querySelector('._stopButton_gtdpc_212');
+            if (stopBtn) stopBtn.remove();
+
+            const expandedClass = '_expanded_gtdpc_278';
+            const expandObserver = new MutationObserver(() => {
+                if (!historyOpen && wrapper.classList.contains(expandedClass)) {
+                    historyWrap.style.setProperty('visibility', 'collapse', 'important');
+                    historyWrap.style.setProperty('padding-top', '0', 'important');
+                    if (historySection) {
+                        historySection.style.setProperty('max-height', '0', 'important');
+                    }
+                }
+            });
+            expandObserver.observe(wrapper, { attributes: true, attributeFilter: ['class'] });
+
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'pa-toggle-btn';
+            toggleBtn.type = 'button';
+            toggleBtn.title = 'Show or hide agent steps';
+            toggleBtn.innerHTML = '☰<span class="pa-badge" id="paStepBadge" data-count="0"></span>';
+            controls.insertBefore(toggleBtn, controls.firstChild);
+
+            toggleBtn.addEventListener('click', (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+                historyOpen = !historyOpen;
+                toggleBtn.classList.toggle('pa-active', historyOpen);
+
+                if (!wrapper.classList.contains(expandedClass)) {
+                    wrapper.classList.add(expandedClass);
+                }
+
+                historyWrap.style.setProperty('visibility', historyOpen ? 'visible' : 'collapse', 'important');
+                historyWrap.style.setProperty('padding-top', historyOpen ? '8px' : '0', 'important');
+                if (historySection) {
+                    historySection.style.setProperty('max-height', historyOpen ? '400px' : '0', 'important');
+                }
+            });
+
+            const badge = document.getElementById('paStepBadge');
+            const countObserver = new MutationObserver(() => {
+                const count = historyWrap.querySelectorAll('._historyItem_gtdpc_297').length;
+                if (badge) {
+                    badge.textContent = count || '';
+                    badge.dataset.count = count;
+                }
+            });
+            countObserver.observe(historyWrap, { childList: true, subtree: true });
+
+            return true;
+        }
+
+        if (!setupQuietAgentPanel()) {
+            const bodyObserver = new MutationObserver(() => {
+                if (setupQuietAgentPanel()) bodyObserver.disconnect();
+            });
+            bodyObserver.observe(document.body, { childList: true, subtree: true });
+        }
+    });
+</script>
 
 <script>
 // ===== DATA =====
